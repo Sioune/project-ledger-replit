@@ -1,0 +1,160 @@
+.auth-home {
+  min-height: 100dvh;
+  display: grid;
+  place-items: center;
+  padding: 28px;
+  background:
+    radial-gradient(ellipse at 18% 12%, rgba(210, 224, 197, 0.48), transparent 38%),
+    #f8f9f5;
+}
+
+.auth-home-card {
+  width: min(100%, 560px);
+  padding: clamp(30px, 6vw, 56px);
+  border: 1px solid #e1e7da;
+  border-radius: 20px;
+  background: rgba(255, 255, 255, 0.94);
+  box-shadow: 0 22px 70px rgba(35, 76, 62, 0.09);
+}
+
+.auth-brand {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  color: #234c3e;
+  font-size: 22px;
+  font-weight: 650;
+}
+
+.auth-brand img {
+  width: 38px;
+  height: 38px;
+}
+
+.auth-eyebrow {
+  margin-top: 46px;
+  color: #657268;
+  font-size: 14px;
+  letter-spacing: 0.06em;
+}
+
+.auth-home-card h1 {
+  margin-top: 10px;
+  color: #29392f;
+  font-size: clamp(30px, 6vw, 42px);
+  letter-spacing: -0.04em;
+  line-height: 1.3;
+}
+
+.auth-description {
+  margin-top: 18px;
+  color: #59685e;
+  font-size: 16px;
+  line-height: 1.9;
+}
+
+.auth-actions {
+  display: flex;
+  gap: 12px;
+  margin-top: 30px;
+}
+
+.auth-actions a,
+.account-auth-bar button {
+  display: inline-flex;
+  min-height: 46px;
+  align-items: center;
+  justify-content: center;
+  border-radius: 8px;
+  padding: 0 20px;
+  font-size: 15px;
+  font-weight: 600;
+  transition: background 150ms ease, border-color 150ms ease;
+}
+
+.auth-primary {
+  background: #234c3e;
+  color: #fff;
+}
+
+.auth-primary:hover {
+  background: #32624c;
+}
+
+.auth-secondary {
+  border: 1px solid #dfe6dc;
+  background: #fff;
+  color: #315441;
+}
+
+.auth-secondary:hover {
+  border-color: #b8c9b1;
+  background: #f4f7f0;
+}
+
+.auth-privacy {
+  margin-top: 20px;
+  color: #748076;
+  font-size: 13px;
+}
+
+.auth-page {
+  min-height: 100dvh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+  background: #f8f9f5;
+}
+
+.workspace-with-auth {
+  min-height: 100dvh;
+}
+
+.account-auth-bar {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 14px;
+  min-height: 42px;
+  padding: 4px 40px;
+  border-bottom: 1px solid #e3e7dd;
+  background: #f1f3ec;
+  color: #59685e;
+  font-size: 13px;
+}
+
+.account-auth-bar button {
+  min-height: 30px;
+  border: 1px solid #d4dfd0;
+  background: #fff;
+  color: #315441;
+  font-size: 13px;
+}
+
+.account-auth-bar button:hover {
+  background: #eaf0e2;
+}
+
+@media (max-width: 520px) {
+  .auth-home {
+    padding: 16px;
+  }
+
+  .auth-home-card {
+    padding: 28px 22px;
+  }
+
+  .auth-eyebrow {
+    margin-top: 36px;
+  }
+
+  .auth-actions {
+    flex-direction: column;
+  }
+
+  .account-auth-bar {
+    justify-content: space-between;
+    padding: 5px 14px;
+  }
+}

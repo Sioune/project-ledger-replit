@@ -1,0 +1,620 @@
+openapi: 3.1.0
+info:
+  # Do not change the title, if the title changes, the import paths will be broken
+  title: Api
+  version: 0.1.0
+  description: API for the private spoken project ledger.
+servers:
+  - url: /api
+    description: Base API path
+tags:
+  - name: health
+    description: Health operations
+  - name: ledger
+    description: Private, user-scoped ledger operations
+  - name: intake
+    description: Image intake and private image retrieval
+  - name: Storage
+    description: Private object storage
+  - name: account-import
+    description: Authenticated, private account backup migration
+paths:
+  /healthz:
+    get:
+      operationId: healthCheck
+      tags: [health]
+      summary: Health check
+      description: Returns server health status
+      responses:
+        "200":
+          description: Healthy
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/HealthStatus"
+  /state:
+    get:
+      operationId: getLedgerState
+      tags: [ledger]
+      summary: Read the current user's ledger
+      responses:
+        "200":
+          description: Current ledger state and account scope
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/JsonObject"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+  /initialize:
+    post:
+      operationId: initializeLedger
+      tags: [ledger]
+      summary: Create an empty ledger for the signed-in user
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/JsonObject"
+      responses:
+        "200":
+          description: Initialized or already initialized
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/JsonObject"
+  /preview:
+    post:
+      operationId: previewLedgerChanges
+      tags: [ledger]
+      summary: Preview spoken progress without saving
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/JsonObject"
+      responses:
+        "200":
+          description: Proposed changes and questions
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/JsonObject"
+  /operations:
+    get:
+      operationId: listLedgerOperations
+      tags: [ledger]
+      summary: List recent operation receipts
+      responses:
+        "200":
+          description: Recent user-scoped receipts
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/JsonObject"
+    post:
+      operationId: commitLedgerOperation
+      tags: [ledger]
+      summary: Commit an operation with idempotency and revision checks
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/JsonObject"
+      responses:
+        "200":
+          description: Saved operation receipt
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/JsonObject"
+  /operations/{operationId}:
+    get:
+      operationId: getLedgerOperation
+      tags: [ledger]
+      summary: Verify a saved operation by its ID
+      parameters:
+        - name: operationId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Verified receipt
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/JsonObject"
+        "404":
+          description: Operation not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorEnvelope"
+  /undo:
+    post:
+      operationId: undoLedgerOperation
+      tags: [ledger]
+      summary: Safely reverse the latest operation
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/JsonObject"
+      responses:
+        "200":
+          description: Reversal receipt
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/JsonObject"
+  /calendar:
+    get:
+      operationId: getLedgerCalendar
+      tags: [ledger]
+      summary: Read the ledger calendar
+      responses:
+        "200":
+          description: Calendar data with registration sources
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/JsonObject"
+  /export:
+    get:
+      operationId: exportLedger
+      tags: [ledger]
+      summary: Export the signed-in user's ledger
+      responses:
+        "200":
+          description: Ledger and operation history
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/JsonObject"
+  /account-backup:
+    get:
+      operationId: downloadAccountBackup
+      tags: [ledger]
+      summary: Download a private account backup
+      responses:
+        "200":
+          description: Account-scoped backup file
+          content:
+            application/zip:
+              schema:
+                type: string
+                format: binary
+  /account-files/resolve:
+    get:
+      operationId: resolvePrivateAccountFile
+      tags: [account-files]
+      summary: Resolve an original Library reference for the signed-in account
+      parameters:
+        - in: query
+          name: library_ref
+          required: true
+          schema:
+            type: string
+        - in: query
+          name: version_id
+          required: false
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Account-owned Library file mapping
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/JsonObject"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+  /account-files/reference/{libraryRef}/{versionId}/download:
+    get:
+      operationId: downloadPrivateAccountFile
+      tags: [account-files]
+      summary: Download a private file by its original Library reference and version
+      parameters:
+        - in: path
+          name: libraryRef
+          required: true
+          schema:
+            type: string
+        - in: path
+          name: versionId
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Private file returned as a non-executable download
+          headers:
+            Content-Disposition:
+              schema:
+                type: string
+            X-Content-Type-Options:
+              schema:
+                type: string
+          content:
+            application/octet-stream:
+              schema:
+                type: string
+                format: binary
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+  /account-files/reference/{libraryRef}/download:
+    get:
+      operationId: downloadPrivateAccountFileByUniqueBareReference
+      tags: [account-files]
+      summary: Download a private file when its bare Library reference is unique
+      parameters:
+        - in: path
+          name: libraryRef
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Unique private file returned as a non-executable download
+          content:
+            application/octet-stream:
+              schema:
+                type: string
+                format: binary
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "409":
+          description: The bare Library reference matches more than one file version
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/JsonObject"
+  /account-import/preview:
+    post:
+      operationId: previewAccountImport
+      tags: [account-import]
+      summary: Validate and preview a private account backup
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              $ref: "#/components/schemas/AccountImportBundleInput"
+      responses:
+        "200":
+          description: Validation and destination conflict preview
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/JsonObject"
+        "400":
+          description: Unsupported or invalid backup
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorEnvelope"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+  /account-import/commit:
+    post:
+      operationId: confirmAccountImport
+      tags: [account-import]
+      summary: Import a previously reviewed backup into the signed-in account
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/AccountImportConfirmation"
+      responses:
+        "200":
+          description: Imported counts after verification
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/JsonObject"
+        "409":
+          description: Destination conflict, expired review, or repeated import
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorEnvelope"
+  /account-import/cancel:
+    post:
+      operationId: cancelAccountImport
+      tags: [account-import]
+      summary: Discard a private import preview
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/AccountImportStageCancellation"
+      responses:
+        "204":
+          description: Preview discarded
+  /intake/capabilities:
+    get:
+      operationId: getIntakeCapabilities
+      tags: [intake]
+      summary: Get image intake capabilities
+      responses:
+        "200":
+          description: Supported manual intake and image limits
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/JsonObject"
+  /intake/preview:
+    post:
+      operationId: previewImageIntake
+      tags: [intake]
+      summary: Preview image intake metadata without saving
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ImageIntakePreviewInput"
+      responses:
+        "200":
+          description: Intake preview
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/JsonObject"
+  /intake/commit:
+    post:
+      operationId: commitImageIntake
+      tags: [intake]
+      summary: Save a reviewed intake and its private image
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ImageIntakeCommitInput"
+      responses:
+        "200":
+          description: Saved operation ID
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/JsonObject"
+  /intake/recognize:
+    post:
+      operationId: recognizeImage
+      tags: [intake]
+      summary: Request optional image recognition
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              $ref: "#/components/schemas/ImageRecognitionInput"
+      responses:
+        "503":
+          description: Recognition provider is not configured; no image is sent.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorEnvelope"
+  /intake/codex-result:
+    post:
+      operationId: submitLocalRecognition
+      tags: [intake]
+      summary: Submit a local recognition result
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              $ref: "#/components/schemas/LocalRecognitionInput"
+      responses:
+        "503":
+          description: The local computer bridge is unavailable in this deployment.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorEnvelope"
+  /images/{imageId}:
+    get:
+      operationId: getPrivateImage
+      tags: [intake]
+      summary: Read an image owned by the signed-in user
+      parameters:
+        - name: imageId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Private image bytes
+          content:
+            image/png:
+              schema:
+                type: string
+                format: binary
+            image/jpeg:
+              schema:
+                type: string
+                format: binary
+            image/webp:
+              schema:
+                type: string
+                format: binary
+  /storage/uploads/request-url:
+    post:
+      operationId: requestUploadUrl
+      tags: [Storage]
+      summary: Request a presigned URL for private image upload
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UploadUrlInput"
+      responses:
+        "200":
+          description: Presigned upload URL generated.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/UploadUrl"
+        "400":
+          description: Invalid upload metadata
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorEnvelope"
+  /storage/objects/{objectPath}:
+    get:
+      operationId: getStorageObject
+      tags: [Storage]
+      summary: Serve an object after checking its private ACL
+      parameters:
+        - name: objectPath
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Private object bytes
+          content:
+            application/octet-stream:
+              schema:
+                type: string
+                format: binary
+        "404":
+          description: Object not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorEnvelope"
+components:
+  responses:
+    Unauthorized:
+      description: Authentication required
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/ErrorEnvelope"
+  schemas:
+    HealthStatus:
+      type: object
+      properties:
+        status:
+          type: string
+      required:
+        - status
+    JsonObject:
+      type: object
+      additionalProperties: true
+    ErrorEnvelope:
+      type: object
+      required: [error]
+      properties:
+        error:
+          type: string
+        message:
+          type: string
+    UploadUrlInput:
+      type: object
+      required: [name, size, contentType]
+      properties:
+        name:
+          type: string
+          minLength: 1
+          maxLength: 255
+        size:
+          type: integer
+          minimum: 1
+          maximum: 1500000
+        contentType:
+          type: string
+          enum: [image/png, image/jpeg, image/webp]
+    UploadUrl:
+      type: object
+      required: [uploadURL, objectPath]
+      properties:
+        uploadURL:
+          type: string
+          format: uri
+        objectPath:
+          type: string
+        metadata:
+          $ref: "#/components/schemas/UploadUrlInput"
+    ImageIntakePreviewInput:
+      type: object
+      required: [draft_json]
+      properties:
+        draft_json:
+          type: string
+        image_meta_json:
+          type: string
+    ImageIntakeCommitInput:
+      type: object
+      required: [payload_json, upload_json]
+      properties:
+        payload_json:
+          type: string
+        upload_json:
+          type: string
+    ImageRecognitionInput:
+      type: object
+      required: [note, request_id]
+      properties:
+        note:
+          type: string
+        request_id:
+          type: string
+    AccountImportBundleInput:
+      type: object
+      required: [snapshot]
+      properties:
+        snapshot:
+          type: string
+          description: Uploaded JSON file field in multipart/form-data.
+        manifest:
+          type: string
+          description: Optional uploaded attachment manifest file.
+        attachments:
+          type: array
+          items:
+            type: string
+            description: Optional original image files named by the manifest.
+    AccountImportConfirmation:
+      type: object
+      required: [stage_id, digest, confirm]
+      properties:
+        stage_id:
+          type: string
+          format: uuid
+        digest:
+          type: string
+          pattern: "^[a-f0-9]{64}$"
+        confirm:
+          type: boolean
+          const: true
+    AccountImportStageCancellation:
+      type: object
+      required: [stage_id]
+      properties:
+        stage_id:
+          type: string
+          format: uuid
+    LocalRecognitionInput:
+      type: object
+      required: [result_json]
+      properties:
+        result_json:
+          type: string
+
